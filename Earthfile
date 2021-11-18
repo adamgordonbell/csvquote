@@ -9,6 +9,7 @@ WORKDIR /workdir
 deps:
     COPY cmd cmd
     COPY go.mod .
+    COPY go.sum .
 
 build:
     FROM +deps

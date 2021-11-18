@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,7 +12,6 @@ const delimiterNonprintingByte, recordsepNonprintingByte byte = 31, 30
 type mapper func(byte, bool, bool) (byte, bool, bool)
 
 func main() {
-	headermode := flag.Bool("h", false, "print the index of each element in the first row then quit")
 	restoremode := flag.Bool("u", false, "restore the original separator characters")
 	delimiter := flag.String("d", ",", "field separator character")
 	delimitertab := flag.Bool("t", false, "use tab as field separator (overrides -d parameter)")
@@ -27,7 +25,7 @@ func main() {
 	quotecharByte := byte((*quotechar)[0])
 	recordsepByte := byte((*recordsep)[0])
 	mapFunction := substituteNonprintingChars(delimiterByte, quotecharByte, recordsepByte)
-	if *restoremode && !(*headermode) {
+	if *restoremode {
 		mapFunction = restoreOriginalChars(delimiterByte, recordsepByte)
 	}
 
@@ -46,55 +44,18 @@ func main() {
 	stateQuoteInEffect := false
 	stateMaybeEscapedQuoteChar := false
 
-	if *headermode {
-		fieldindex := 0
-		fields := [][]byte{{}}
-		datacharmapped := byte('0')
-		_ = datacharmapped // why is this necessary and faster than using _ later?
-	outerloop:
-		for {
-			if count, err := input.Read(data); err != nil {
-				if err != io.EOF {
-					log.Fatal(err)
-				}
-				break
-			} else {
-				for i := 0; i < count; i++ {
-					datacharmapped, stateQuoteInEffect, stateMaybeEscapedQuoteChar =
-						mapFunction(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
-					if fieldindex >= len(fields) {
-						newfield := make([]byte, 0)
-						fields = append(fields, newfield)
-					}
-					if !(stateQuoteInEffect) && (data[i] == recordsepByte) {
-						// this is the end of the header row
-						break outerloop
-					} else if !(stateQuoteInEffect) && (data[i] == delimiterByte) {
-						fieldindex++
-					} else {
-						fields[fieldindex] = append(fields[fieldindex], data[i])
-					}
-				}
+	for {
+		if count, err := input.Read(data); err != nil {
+			if err != io.EOF {
+				log.Fatal(err)
 			}
-		}
-		for i := 0; i < len(fields); i++ {
-			fmt.Printf(" %d\t: %s\n", (i + 1), fields[i])
-		}
-	} else {
-		// replace mode
-		for {
-			if count, err := input.Read(data); err != nil {
-				if err != io.EOF {
-					log.Fatal(err)
-				}
-				break
-			} else {
-				for i := 0; i < count; i++ {
-					data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar =
-						mapFunction(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
-				}
-				os.Stdout.Write(data[:count])
+			break
+		} else {
+			for i := 0; i < count; i++ {
+				data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar =
+					mapFunction(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
 			}
+			os.Stdout.Write(data[:count])
 		}
 	}
 
@@ -102,6 +63,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func substitute(data []byte, f mapper) []byte {
+	var count int
+	count = len(data)
+
+	stateQuoteInEffect := false
+	stateMaybeEscapedQuoteChar := false
+
+	for i := 0; i < count; i++ {
+		data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar =
+			f(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
+	}
+	return data
 }
 
 func substituteNonprintingChars(delimiterByte byte, quotecharByte byte, recordsepByte byte) mapper {
