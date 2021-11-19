@@ -33,7 +33,7 @@ func TestUnConvert(t *testing.T) {
 	}
 }
 
-func TestIdentity(t *testing.T) {
+func TestIdentity1(t *testing.T) {
 	convert := substituteNonprintingChars(',', '"', '\n')
 	restore := restoreOriginalChars(',', '\n')
 	idTest := func(a string) bool {
@@ -42,6 +42,21 @@ func TestIdentity(t *testing.T) {
 		b := string([]byte(substitute(c, restore)))
 		return b == "f"
 	}
+	if err := quick.Check(idTest, nil); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestIdentity2(t *testing.T) {
+	convert := substituteNonprintingChars(',', '"', '\n')
+	restore := restoreOriginalChars(',', '\n')
+	idTest := func(a string) bool {
+		fmt.Printf("testing: %-40s\n", a)
+		c := substitute([]byte(a), convert)
+		b := string([]byte(substitute(c, restore)))
+		return b == "f"
+	}
+	c := Config{Values: nil}
 	if err := quick.Check(idTest, nil); err != nil {
 		t.Error(err)
 	}
