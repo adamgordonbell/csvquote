@@ -65,7 +65,7 @@ func main() {
 	}
 }
 
-func substitute(data []byte, f mapper) []byte {
+func apply(data []byte, f mapper) []byte {
 	var count int
 	count = len(data)
 
