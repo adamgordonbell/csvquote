@@ -37,6 +37,19 @@ func TestRestore(t *testing.T) {
 	}
 }
 
+func apply(data []byte, f mapper) []byte {
+	count := len(data)
+
+	stateQuoteInEffect := false
+	stateMaybeEscapedQuoteChar := false
+
+	for i := 0; i < count; i++ {
+		data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar =
+			f(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
+	}
+	return data
+}
+
 // Will Fail: as doens't exclude \x1e and \x1f
 // func TestIdentity1(t *testing.T) {
 // 	c := quick.Config{MaxCount: 1000000}
