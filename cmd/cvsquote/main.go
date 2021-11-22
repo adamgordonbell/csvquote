@@ -65,19 +65,6 @@ func main() {
 	}
 }
 
-func substitute(data []byte, f mapper) []byte {
-	var count int
-	count = len(data)
-
-	stateQuoteInEffect := false
-	stateMaybeEscapedQuoteChar := false
-
-	for i := 0; i < count; i++ {
-		data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar =
-			f(data[i], stateQuoteInEffect, stateMaybeEscapedQuoteChar)
-	}
-	return data
-}
 
 func substituteNonprintingChars(delimiterByte byte, quotecharByte byte, recordsepByte byte) mapper {
 	return func(c byte, stateQuoteInEffect bool, stateMaybeEscapedQuoteChar bool) (byte, bool, bool) {
